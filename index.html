@@ -1,0 +1,581 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>我的视频收藏</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+
+    :root {
+      --bg: #f5f5f7;
+      --card: #ffffff;
+      --primary: #0071e3;
+      --primary-hover: #0077ed;
+      --text: #1d1d1f;
+      --subtext: #6e6e73;
+      --border: #e5e5e7;
+      --shadow: 0 4px 24px rgba(0,0,0,0.08);
+      --radius: 16px;
+    }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "PingFang SC", "Microsoft YaHei", sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      min-height: 100vh;
+    }
+
+    /* 顶栏 */
+    header {
+      background: rgba(255,255,255,0.85);
+      backdrop-filter: blur(20px);
+      -webkit-backdrop-filter: blur(20px);
+      border-bottom: 1px solid var(--border);
+      position: sticky;
+      top: 0;
+      z-index: 100;
+      padding: 0 32px;
+      height: 60px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+
+    .logo {
+      font-size: 18px;
+      font-weight: 700;
+      color: var(--text);
+      letter-spacing: -0.3px;
+    }
+
+    .logo span { color: var(--primary); }
+
+    .header-actions {
+      display: flex;
+      gap: 12px;
+      align-items: center;
+    }
+
+    .btn {
+      padding: 8px 18px;
+      border-radius: 20px;
+      border: none;
+      cursor: pointer;
+      font-size: 14px;
+      font-weight: 500;
+      transition: all 0.2s;
+    }
+
+    .btn-primary {
+      background: var(--primary);
+      color: #fff;
+    }
+
+    .btn-primary:hover { background: var(--primary-hover); transform: scale(1.03); }
+
+    .btn-outline {
+      background: transparent;
+      color: var(--primary);
+      border: 1.5px solid var(--primary);
+    }
+
+    .btn-outline:hover { background: #e8f1fd; }
+
+    /* 主体 */
+    main {
+      max-width: 1200px;
+      margin: 0 auto;
+      padding: 40px 24px;
+    }
+
+    /* 搜索栏 */
+    .search-bar {
+      display: flex;
+      gap: 12px;
+      margin-bottom: 32px;
+    }
+
+    .search-input {
+      flex: 1;
+      padding: 12px 20px;
+      border-radius: 24px;
+      border: 1.5px solid var(--border);
+      font-size: 15px;
+      outline: none;
+      background: var(--card);
+      transition: border 0.2s;
+    }
+
+    .search-input:focus { border-color: var(--primary); }
+
+    /* 分类标签 */
+    .tags {
+      display: flex;
+      gap: 10px;
+      flex-wrap: wrap;
+      margin-bottom: 28px;
+    }
+
+    .tag {
+      padding: 6px 16px;
+      border-radius: 20px;
+      font-size: 13px;
+      cursor: pointer;
+      border: 1.5px solid var(--border);
+      background: var(--card);
+      color: var(--subtext);
+      transition: all 0.2s;
+      user-select: none;
+    }
+
+    .tag:hover, .tag.active {
+      background: var(--primary);
+      color: #fff;
+      border-color: var(--primary);
+    }
+
+    /* 统计栏 */
+    .stats {
+      font-size: 13px;
+      color: var(--subtext);
+      margin-bottom: 20px;
+    }
+
+    /* 视频网格 */
+    .video-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+      gap: 20px;
+    }
+
+    /* 视频卡片 */
+    .video-card {
+      background: var(--card);
+      border-radius: var(--radius);
+      overflow: hidden;
+      box-shadow: var(--shadow);
+      transition: transform 0.2s, box-shadow 0.2s;
+      cursor: pointer;
+      position: relative;
+    }
+
+    .video-card:hover {
+      transform: translateY(-4px);
+      box-shadow: 0 12px 40px rgba(0,0,0,0.13);
+    }
+
+    .video-wrap {
+      position: relative;
+      width: 100%;
+      padding-top: 56.25%;
+      background: #000;
+      overflow: hidden;
+    }
+
+    .video-wrap video {
+      position: absolute;
+      top: 0; left: 0;
+      width: 100%; height: 100%;
+      object-fit: cover;
+    }
+
+    .video-wrap .play-overlay {
+      position: absolute;
+      top: 0; left: 0;
+      width: 100%; height: 100%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: rgba(0,0,0,0.25);
+      opacity: 0;
+      transition: opacity 0.2s;
+    }
+
+    .video-card:hover .play-overlay { opacity: 1; }
+
+    .play-icon {
+      width: 52px; height: 52px;
+      background: rgba(255,255,255,0.92);
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 20px;
+    }
+
+    .video-info {
+      padding: 14px 16px 16px;
+    }
+
+    .video-title {
+      font-size: 15px;
+      font-weight: 600;
+      margin-bottom: 6px;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .video-meta {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+
+    .video-tag {
+      font-size: 11px;
+      padding: 3px 10px;
+      border-radius: 10px;
+      background: #e8f1fd;
+      color: var(--primary);
+      font-weight: 500;
+    }
+
+    .video-date {
+      font-size: 12px;
+      color: var(--subtext);
+    }
+
+    .delete-btn {
+      position: absolute;
+      top: 10px; right: 10px;
+      background: rgba(255,59,48,0.85);
+      color: #fff;
+      border: none;
+      border-radius: 50%;
+      width: 28px; height: 28px;
+      font-size: 14px;
+      cursor: pointer;
+      display: none;
+      align-items: center;
+      justify-content: center;
+      z-index: 10;
+    }
+
+    .video-card:hover .delete-btn { display: flex; }
+
+    /* 空状态 */
+    .empty-state {
+      text-align: center;
+      padding: 80px 20px;
+      color: var(--subtext);
+    }
+
+    .empty-state .icon { font-size: 56px; margin-bottom: 16px; }
+    .empty-state h3 { font-size: 18px; margin-bottom: 8px; color: var(--text); }
+    .empty-state p { font-size: 14px; }
+
+    /* 弹窗 */
+    .modal-overlay {
+      display: none;
+      position: fixed;
+      inset: 0;
+      background: rgba(0,0,0,0.5);
+      backdrop-filter: blur(6px);
+      z-index: 200;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .modal-overlay.show { display: flex; }
+
+    .modal {
+      background: var(--card);
+      border-radius: 20px;
+      padding: 32px;
+      width: 480px;
+      max-width: 92vw;
+      box-shadow: 0 24px 80px rgba(0,0,0,0.2);
+      animation: modalIn 0.25s ease;
+    }
+
+    @keyframes modalIn {
+      from { opacity: 0; transform: scale(0.93) translateY(16px); }
+      to   { opacity: 1; transform: scale(1) translateY(0); }
+    }
+
+    .modal h2 { font-size: 20px; margin-bottom: 24px; }
+
+    .form-group { margin-bottom: 18px; }
+
+    .form-group label {
+      display: block;
+      font-size: 13px;
+      color: var(--subtext);
+      margin-bottom: 6px;
+      font-weight: 500;
+    }
+
+    .form-group input,
+    .form-group select {
+      width: 100%;
+      padding: 10px 14px;
+      border-radius: 10px;
+      border: 1.5px solid var(--border);
+      font-size: 14px;
+      outline: none;
+      background: var(--bg);
+      transition: border 0.2s;
+    }
+
+    .form-group input:focus,
+    .form-group select:focus { border-color: var(--primary); }
+
+    .form-group input[type="file"] {
+      padding: 8px 14px;
+      cursor: pointer;
+    }
+
+    .modal-actions {
+      display: flex;
+      gap: 12px;
+      justify-content: flex-end;
+      margin-top: 24px;
+    }
+
+    /* 视频播放弹窗 */
+    .player-modal {
+      display: none;
+      position: fixed;
+      inset: 0;
+      background: rgba(0,0,0,0.92);
+      z-index: 300;
+      align-items: center;
+      justify-content: center;
+      flex-direction: column;
+    }
+
+    .player-modal.show { display: flex; }
+
+    .player-modal video {
+      max-width: 90vw;
+      max-height: 80vh;
+      border-radius: 12px;
+    }
+
+    .player-title {
+      color: #fff;
+      font-size: 16px;
+      margin-top: 16px;
+      font-weight: 500;
+    }
+
+    .player-close {
+      position: absolute;
+      top: 24px; right: 28px;
+      background: rgba(255,255,255,0.15);
+      border: none;
+      color: #fff;
+      font-size: 22px;
+      width: 44px; height: 44px;
+      border-radius: 50%;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: background 0.2s;
+    }
+
+    .player-close:hover { background: rgba(255,255,255,0.28); }
+
+    /* 响应式 */
+    @media (max-width: 600px) {
+      header { padding: 0 16px; }
+      main { padding: 24px 12px; }
+      .video-grid { grid-template-columns: 1fr; }
+    }
+  </style>
+</head>
+<body>
+
+<!-- 顶栏 -->
+<header>
+  <div class="logo">🎬 我的<span>视频收藏</span></div>
+  <div class="header-actions">
+    <button class="btn btn-primary" onclick="openAddModal()">+ 添加视频</button>
+  </div>
+</header>
+
+<!-- 主体 -->
+<main>
+  <!-- 搜索 -->
+  <div class="search-bar">
+    <input class="search-input" id="searchInput" placeholder="🔍 搜索视频标题..." oninput="renderVideos()" />
+  </div>
+
+  <!-- 分类标签 -->
+  <div class="tags" id="tagList"></div>
+
+  <!-- 统计 -->
+  <div class="stats" id="statsText"></div>
+
+  <!-- 视频网格 -->
+  <div class="video-grid" id="videoGrid"></div>
+</main>
+
+<!-- 添加视频弹窗 -->
+<div class="modal-overlay" id="addModal">
+  <div class="modal">
+    <h2>添加视频</h2>
+    <div class="form-group">
+      <label>视频标题 *</label>
+      <input id="inputTitle" placeholder="给这个视频起个名字" />
+    </div>
+    <div class="form-group">
+      <label>选择视频文件 *</label>
+      <input type="file" id="inputFile" accept="video/*" />
+    </div>
+    <div class="form-group">
+      <label>分类标签</label>
+      <input id="inputTag" placeholder="例如：学习、娱乐、音乐..." />
+    </div>
+    <div class="modal-actions">
+      <button class="btn btn-outline" onclick="closeAddModal()">取消</button>
+      <button class="btn btn-primary" onclick="addVideo()">添加</button>
+    </div>
+  </div>
+</div>
+
+<!-- 视频播放弹窗 -->
+<div class="player-modal" id="playerModal">
+  <button class="player-close" onclick="closePlayer()">✕</button>
+  <video id="playerVideo" controls></video>
+  <div class="player-title" id="playerTitle"></div>
+</div>
+
+<script>
+  // 数据存储（使用localStorage）
+  let videos = JSON.parse(localStorage.getItem('myVideos') || '[]');
+  let activeTag = '全部';
+
+  function saveVideos() {
+    localStorage.setItem('myVideos', JSON.stringify(videos));
+  }
+
+  // 渲染标签
+  function renderTags() {
+    const allTags = ['全部', ...new Set(videos.map(v => v.tag || '其他'))];
+    const tagList = document.getElementById('tagList');
+    tagList.innerHTML = allTags.map(t =>
+      `<div class="tag ${t === activeTag ? 'active' : ''}" onclick="filterTag('${t}')">${t}</div>`
+    ).join('');
+  }
+
+  function filterTag(tag) {
+    activeTag = tag;
+    renderTags();
+    renderVideos();
+  }
+
+  // 渲染视频
+  function renderVideos() {
+    const keyword = document.getElementById('searchInput').value.trim().toLowerCase();
+    let list = videos;
+    if (activeTag !== '全部') list = list.filter(v => (v.tag || '其他') === activeTag);
+    if (keyword) list = list.filter(v => v.title.toLowerCase().includes(keyword));
+
+    document.getElementById('statsText').textContent = `共 ${list.length} 个视频`;
+
+    const grid = document.getElementById('videoGrid');
+    if (list.length === 0) {
+      grid.innerHTML = `
+        <div class="empty-state" style="grid-column:1/-1">
+          <div class="icon">🎞️</div>
+          <h3>还没有视频</h3>
+          <p>点击右上角「+ 添加视频」开始收藏吧</p>
+        </div>`;
+      return;
+    }
+
+    grid.innerHTML = list.map((v, i) => `
+      <div class="video-card" onclick="playVideo(${videos.indexOf(v)})">
+        <div class="video-wrap">
+          <video src="${v.url}" preload="metadata" muted></video>
+          <div class="play-overlay">
+            <div class="play-icon">▶</div>
+          </div>
+        </div>
+        <button class="delete-btn" onclick="event.stopPropagation(); deleteVideo(${videos.indexOf(v)})">✕</button>
+        <div class="video-info">
+          <div class="video-title" title="${v.title}">${v.title}</div>
+          <div class="video-meta">
+            <span class="video-tag">${v.tag || '其他'}</span>
+            <span class="video-date">${v.date}</span>
+          </div>
+        </div>
+      </div>
+    `).join('');
+  }
+
+  // 添加视频
+  function openAddModal() {
+    document.getElementById('addModal').classList.add('show');
+  }
+
+  function closeAddModal() {
+    document.getElementById('addModal').classList.remove('show');
+    document.getElementById('inputTitle').value = '';
+    document.getElementById('inputFile').value = '';
+    document.getElementById('inputTag').value = '';
+  }
+
+  function addVideo() {
+    const title = document.getElementById('inputTitle').value.trim();
+    const file = document.getElementById('inputFile').files[0];
+    const tag = document.getElementById('inputTag').value.trim() || '其他';
+
+    if (!title) { alert('请输入视频标题'); return; }
+    if (!file) { alert('请选择视频文件'); return; }
+
+    const url = URL.createObjectURL(file);
+    const now = new Date();
+    const date = `${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,'0')}-${String(now.getDate()).padStart(2,'0')}`;
+
+    videos.unshift({ title, url, tag, date, fileName: file.name });
+    saveVideos();
+    closeAddModal();
+    renderTags();
+    renderVideos();
+  }
+
+  // 删除视频
+  function deleteVideo(index) {
+    if (confirm(`确认删除「${videos[index].title}」？`)) {
+      videos.splice(index, 1);
+      saveVideos();
+      renderTags();
+      renderVideos();
+    }
+  }
+
+  // 播放视频
+  function playVideo(index) {
+    const v = videos[index];
+    document.getElementById('playerVideo').src = v.url;
+    document.getElementById('playerTitle').textContent = v.title;
+    document.getElementById('playerModal').classList.add('show');
+    document.getElementById('playerVideo').play();
+  }
+
+  function closePlayer() {
+    document.getElementById('playerModal').classList.remove('show');
+    document.getElementById('playerVideo').pause();
+    document.getElementById('playerVideo').src = '';
+  }
+
+  // 点击遮罩关闭
+  document.getElementById('addModal').addEventListener('click', function(e) {
+    if (e.target === this) closeAddModal();
+  });
+
+  document.getElementById('playerModal').addEventListener('click', function(e) {
+    if (e.target === this) closePlayer();
+  });
+
+  // 初始化
+  renderTags();
+  renderVideos();
+</script>
+</body>
+</html>
